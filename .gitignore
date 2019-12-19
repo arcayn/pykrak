@@ -1,0 +1,6 @@
+dist
+PyKrak.egg-info
+tester.py
+
+*.pyc
+PyKrak/__pycache__

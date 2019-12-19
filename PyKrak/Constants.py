@@ -1,0 +1,3 @@
+alphabets = {
+    'en': 'abcdefghijklmnopqrstuvwxyz'
+    }
