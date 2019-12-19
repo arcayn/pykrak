@@ -9,6 +9,7 @@
 
 import Constants
 import math
+from copy import copy
 
 class Cipher:
     def __init__(self,key='',alphabet=Constants.alphabets['en']):
@@ -102,11 +103,13 @@ class Vigenere(Cipher):
                 r += ch
         return r
 
-class Railfence(Cipher):
-    def decode(self,msg,key=None):
+class Redefence(Cipher):
+    def decode(self,msg,key=None,alphabet=None):
         if key is None:
-            key = self.key
-            
+            key = copy(self.key)
+
+        keyword = copy(key)
+        key = len(key)
         rowLengths = []
         val = (2*key)-2
         fulls = math.floor(len(msg)/val)
@@ -125,10 +128,19 @@ class Railfence(Cipher):
 
         # GENERATE ROWS
 
-        rows = []
-        for r in rowLengths:
-            rows.append(list(msg[:r]))
+        proto_rows = {}
+        sorted_kwd = sorted(keyword)
+
+        for k in keyword:
+            ind = sorted_kwd.index(k)
+            r = rowLengths[ind]
+            proto_rows[ind] = list(msg[:r])
             msg = msg[r:]
+
+        rows = []
+        for x in range(key):
+            rows.append(proto_rows[x])
+        
 
         # READ OFF ROWS
 
@@ -147,3 +159,14 @@ class Railfence(Cipher):
             position = position + direction
 
         return message
+
+class Railfence(Cipher):
+    def __init__(self,key=2,alphabet=None):
+        self.key = key
+        self.sub = Redefence()
+        
+    def decode(self,msg,key=None,alphabet=None):
+        if key is None:
+            key = copy(self.key)
+
+        return self.sub.decode(msg, range(key))
