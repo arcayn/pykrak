@@ -17,6 +17,33 @@ class Cipher:
     def decode(self,msg,key=None,alphabet=None):
         return msg
 
+class AffineShift(Cipher):
+    def mod_inverse(self,a,m):
+        a = a%m
+        for x in range(1,m):
+            if (a*x)%m == 1:
+                return x
+
+    def decode(self,msg,key=None,alphabet=None):
+        # Initialise...
+        if key is None:
+            key = self.key
+        if alphabet is None:
+            alphabet = self.alphabet
+
+        #print (key)
+
+        # Solve cipher
+        p = ''
+        mod = len(alphabet)
+        m_inv = self.mod_inverse(key[0], mod)
+        for ch in msg:
+            x = alphabet.index(ch)
+            p += alphabet[(m_inv*(x - key[1]))%mod]
+
+        return p
+        
+
 class CaesarShift(Cipher):
     def __init__(self,key=0,alphabet=Constants.alphabets['en']):
         self.key = key

@@ -9,6 +9,7 @@
 
 import random
 import math
+from copy import copy
 
 class Solver:
     def __init__(self,cipher,fitness,mutator,starter,iterations,**kwargs):
@@ -37,6 +38,41 @@ class Solver:
     def solve(self,message,**kwargs):
         return message
 
+class BruteForce(Solver):
+    def solve(self,msg,**kwargs):
+        op = self.parse_options(**self.options)
+        curr_k = self.starter.generate(m=msg, **op['starter'])
+        t_dec = self.cipher.decode(msg,curr_k)
+        curr_fit = self.fitness.score(t_dec, **op['fitness'])
+
+        run = 0
+        t_k = curr_k
+        while run < self.iterations and t_k is not None:
+            t_k = self.mutator.generate(t_k, **op['mutator'])
+            if t_k is None:
+                break
+            t_dec = self.cipher.decode(msg,t_k)
+            t_fit = self.fitness.score(t_dec, **op['fitness'])
+            if t_fit < curr_fit:
+                if 'verbose' in kwargs:
+                    print ("===== BETTER KEY FOUND =====")
+                    print ("Current fitness:", t_fit)
+                    print ("Current key:", t_k)
+                    print ("Current iteration:",run)
+                    print ("Sample output:",(t_dec[:200] if len(t_dec) > 199 else t_dec))
+                curr_fit = t_fit
+                curr_k = copy(t_k)
+            run += 1
+        plain = self.cipher.decode(msg,curr_k)
+        if 'verbose' in kwargs:
+            print ("===== FINAL RESULTS =====")
+            print ("Iterations:",run)
+            print ("Key:",curr_k)
+            print ("Fitness:",curr_fit)
+            print ("Plaintext:",plain)
+
+        return {"key":curr_k,"fit":curr_fit,"plain":plain}
+
 class HillClimb(Solver):
     def solve(self,msg,**kwargs):
         op = self.parse_options(**self.options)
@@ -55,7 +91,7 @@ class HillClimb(Solver):
                     print ("Current iteration:",run)
                     print ("Sample output:",(t_dec[:200] if len(t_dec) > 199 else t_dec))
                 curr_fit = t_fit
-                curr_k = t_k
+                curr_k = copy(t_k)
 
         plain = self.cipher.decode(msg,curr_k)
         if 'verbose' in kwargs:
@@ -95,7 +131,7 @@ class SimulatedAnnealing(Solver):
                 print ("Current iteration:",run)
                 print ("Sample output:",(t_dec[:200] if len(t_dec) > 199 else t_dec))
             curr_fit = t_fit
-            curr_k = t_k
+            curr_k = copy(t_k)
 
         plain = self.cipher.decode(msg,curr_k)
         if 'verbose' in kwargs:

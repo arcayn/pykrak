@@ -43,6 +43,10 @@ class FixedInteger(Starter):
         except:
             return 0
 
+class AffineStarter(Starter):
+    def generate(self,**kwargs):
+        return [1,0]
+
 class FrequencyAnalysisStarter(Starter):
     def __init__(self,m='',lang='en',alphabet=Constants.alphabets['en']):
         self.alphabet = alphabet

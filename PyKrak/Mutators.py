@@ -50,6 +50,9 @@ class IncrementMutator(Mutator):
             s = s%kwargs['mod']
         except:
             s = s
+
+        if 'systematic' in kwargs and s == 0:
+            return None
         return s
 
 #####################################
@@ -63,9 +66,16 @@ class StoredMutator(Mutator):
         except:
             mut = SwapMutator(self.alphabet)
 
+        try:
+            stop = kwargs['stop']
+        except:
+            stop = -1
+
         r = mut.generate(s, **kwargs)
-        while r in self.tested:
+        tries = 0
+        while r in self.tested and (stop == -1 or tries <= stop):
             r = mut.generate(s, **kwargs)
+            tries += 1
         return r
 
 class RepeaterMutator(Mutator):
@@ -98,6 +108,42 @@ class RepeaterMutator(Mutator):
 #####################################
 
 ############ CIPHER MUTATORS
+
+class AffineMutator(Mutator):
+    def coprime(self, a, m): 
+        a = a % m
+        for x in range(1, m): 
+            if ((a * x) % m == 1): 
+                return False
+        return True
+    
+    def generate(self,k,**kwargs):
+        try:
+            inc = kwargs['inc']
+        except:
+            inc = 1
+
+        inc = random.randint(1,inc)
+        
+        if k[1] >= len(self.alphabet):
+            k[1] = 0
+            if k[0] >= len(self.alphabet):
+                k[0] = 1
+                if 'systematic' in kwargs:
+                    return None
+            else:
+                k[0] += inc
+                while self.coprime(k[0], len(self.alphabet)):
+                    k[0] += inc
+                    if k[0] >= len(self.alphabet):
+                        k[0] = 1
+                        if 'systematic' in kwargs:
+                            return None
+        else:
+            k[1] += inc
+
+        return k
+        
 
 #####################################
 
