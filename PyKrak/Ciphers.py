@@ -8,6 +8,7 @@
 #########################################
 
 import Constants
+import math
 
 class Cipher:
     def __init__(self,key='',alphabet=Constants.alphabets['en']):
@@ -100,3 +101,49 @@ class Vigenere(Cipher):
             except:
                 r += ch
         return r
+
+class Railfence(Cipher):
+    def decode(self,msg,key=None):
+        if key is None:
+            key = self.key
+            
+        rowLengths = []
+        val = (2*key)-2
+        fulls = math.floor(len(msg)/val)
+        rem = len(msg)%val
+        for x in range(key):
+            if x == 0 or x == (key-1):
+                rowLengths.append(fulls)
+            else:
+                rowLengths.append(2*fulls)
+                
+        for i in range(rem):
+            add = i
+            if i >= key:
+                add = (key-2)-(i%key)
+            rowLengths[add] = rowLengths[add] + 1
+
+        # GENERATE ROWS
+
+        rows = []
+        for r in rowLengths:
+            rows.append(list(msg[:r]))
+            msg = msg[r:]
+
+        # READ OFF ROWS
+
+        position = 0
+        direction = -1
+        message = ""
+        while True:
+            try:
+                message += rows[position].pop(0)
+            except:
+                break
+            
+            if position%(val/2) == 0:
+                direction = (-1)*direction
+
+            position = position + direction
+
+        return message

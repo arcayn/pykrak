@@ -1,6 +1,7 @@
 import Constants
 import random
 from Scorers import ngram_loader
+from copy import copy
 
 ######## BASE CLASSES
 
@@ -45,7 +46,7 @@ class IncrementMutator(Mutator):
             m = kwargs['top']
         except:
             m = 1
-        s += random.randint(1,26)
+        s += random.randint(1,m)
         try:
             s = s%kwargs['mod']
         except:
@@ -118,6 +119,7 @@ class AffineMutator(Mutator):
         return True
     
     def generate(self,k,**kwargs):
+        k = copy(k)
         try:
             inc = kwargs['inc']
         except:
