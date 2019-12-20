@@ -46,7 +46,8 @@ class Dictionary:
         return [self.words[i], i]
 
     def get_nearby_word(self,i,radius=1000):
-        i += (random.randint(-radius,radius))%(self.word_count-1)
+        i += (random.randint(-radius,radius))
+        i = i%(self.word_count-1)
         return [self.words[i], i]
 
     def get_next_word(self):

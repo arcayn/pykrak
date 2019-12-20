@@ -20,6 +20,11 @@ class Solver:
         self.iterations = iterations
         self.options = kwargs
 
+    def print_verbose(self,stats,title="KEY UPDATE"):
+        print ("==========",title,"==========")
+        for k in stats:
+            print (k+':',str(stats[k]))
+
     def parse_options(self,**kwargs):
         mutator = {}
         fitness = {}
@@ -55,22 +60,13 @@ class BruteForce(Solver):
             t_fit = self.fitness.score(t_dec, **op['fitness'])
             if t_fit < curr_fit:
                 if 'verbose' in kwargs:
-                    print ("===== BETTER KEY FOUND =====")
-                    print ("Current fitness:", t_fit)
-                    print ("Current key:", t_k)
-                    print ("Current iteration:",run)
-                    print ("Sample output:",(t_dec[:200] if len(t_dec) > 199 else t_dec))
+                    self.print_verbose({'Current fitness':t_fit,"Current key": t_k,"Current iteration": run,"Sample output": (t_dec[:200] if len(t_dec) > 199 else t_dec)})
                 curr_fit = t_fit
                 curr_k = copy(t_k)
             run += 1
         plain = self.cipher.decode(msg,curr_k)
         if 'verbose' in kwargs:
-            print ("===== FINAL RESULTS =====")
-            print ("Iterations:",run)
-            print ("Key:",curr_k)
-            print ("Fitness:",curr_fit)
-            print ("Plaintext:",plain)
-
+            self.print_verbose({'Iterations':run,'Key':curr_k,'Fitness':curr_fit,'Plaintext':plain}, 'FINAL RESULTS')
         return {"key":curr_k,"fit":curr_fit,"plain":plain}
 
 class HillClimb(Solver):
@@ -85,23 +81,80 @@ class HillClimb(Solver):
             t_fit = self.fitness.score(t_dec, **op['fitness'])
             if t_fit < curr_fit:
                 if 'verbose' in kwargs:
-                    print ("===== BETTER KEY FOUND =====")
-                    print ("Current fitness:", t_fit)
-                    print ("Current key:", t_k)
-                    print ("Current iteration:",run)
-                    print ("Sample output:",(t_dec[:200] if len(t_dec) > 199 else t_dec))
+                    self.print_verbose({'Current fitness':t_fit,"Current key": t_k,"Current iteration": run,"Sample output": (t_dec[:200] if len(t_dec) > 199 else t_dec)})
                 curr_fit = t_fit
                 curr_k = copy(t_k)
 
         plain = self.cipher.decode(msg,curr_k)
         if 'verbose' in kwargs:
-            print ("===== FINAL RESULTS =====")
-            print ("Iterations:",self.iterations)
-            print ("Key:",curr_k)
-            print ("Fitness:",curr_fit)
-            print ("Plaintext:",plain)
+            self.print_verbose({'Iterations':self.iterations,'Key':curr_k,'Fitness':curr_fit,'Plaintext':plain}, 'FINAL RESULTS')
 
         return {"key":curr_k,"fit":curr_fit,"plain":plain}
+
+class ParticleSwarm(Solver):
+    def word_distance(self,s,d,alphabet=Constants.alphabets['en'],comp=13):
+        t = 0
+        if len(d) < len(s):
+            t += comp*(len(s)len(d))
+            s = s[:len(d)]
+        if len(d) > len(s):
+            t += comp*(len(d)-len(s))
+        for x in range(len(s)):
+            t += alphabet.index(s[x])-alphabet.index(d[x])
+            
+        return t
+    def solve(self,msg,**kwargs):
+        op = self.parse_options(**self.options)
+        n = self.options['n']
+        omega = self.options['omega']
+        phi_p = self.options['phi_p']
+        phi_g = self.options['phi_g']
+        distance_function = self.options['distance_function']
+        max_velocity = self.options['max_velocity']
+
+        def fit(k):
+            return self.fitness.score(self.cipher.decode(msg,k), **op['fitness'])
+        
+        particles = []
+        best_f = -1
+        best_p = ''
+        for x in range(n):
+            particles.append({'p': self.starter.generate(m=msg, **op['starter']), 'v': random.randint(0,max_velocity)})
+            particles[-1]['x'] = copy(particles[-1]['p'])
+            c_f = fit(particles[-1]['p'])
+            if best_f == -1 or c_f < best_f:
+                best_f = c_f
+                best_p = copy(particles[-1]['p'])
+
+        for run in range(self.iterations):
+            for part in particles:
+                r_p = random.random()
+                r_g = random.random()
+
+                part['v'] = math.ceil(omega*part['v'] + phi_p*r_p*(distance_function(part['x'],part['p'])) + phi_g*r_g*(distance_function(part['x'],best_p)))
+                #print (part['v'])
+                curr_update = copy(part['p'])
+                for i in range(part['v']):
+                    curr_update = self.mutator.generate(curr_update, **op['mutator'])
+                part['x'] = copy(curr_update)
+
+                x_fit = fit(part['x'])
+                p_fit = fit(part['p'])
+                if x_fit < p_fit:
+                    part['p'] = copy(part['x'])
+                    if x_fit < best_f:
+                        best_p = copy(part['p'])
+                        best_f = x_fit
+                        t_dec = self.cipher.decode(msg,best_p)
+                        if 'verbose' in kwargs:
+                            self.print_verbose({'Current fitness':best_f,"Current key":best_p,"Lead Particle":particles.index(part),"Current iteration": run,"Sample output": (t_dec[:200] if len(t_dec) > 199 else t_dec)})
+        
+
+        plain = self.cipher.decode(msg,best_p)
+        if 'verbose' in kwargs:
+            self.print_verbose({'Iterations':run,'Key':best_p,'Fitness':best_f,'Plaintext':plain}, 'FINAL RESULTS')
+
+        return {"key":best_p,"fit":best_f,"plain":plain}
 
 class SimulatedAnnealing(Solver):
     def solve(self,msg,**kwargs):
@@ -125,21 +178,13 @@ class SimulatedAnnealing(Solver):
                     continue
 
             if 'verbose' in kwargs and t_fit <= curr_fit:
-                print ("===== UPDATED KEY FOUND =====")
-                print ("Current fitness:", t_fit)
-                print ("Current key:", t_k)
-                print ("Current iteration:",run)
-                print ("Sample output:",(t_dec[:200] if len(t_dec) > 199 else t_dec))
+                self.print_verbose({'Current fitness':t_fit,"Current key": t_k,"Current iteration": run,"Sample output": (t_dec[:200] if len(t_dec) > 199 else t_dec)})
             curr_fit = t_fit
             curr_k = copy(t_k)
 
         plain = self.cipher.decode(msg,curr_k)
         if 'verbose' in kwargs:
-            print ("===== FINAL RESULTS =====")
-            print ("Iterations:",self.iterations)
-            print ("Key:",curr_k)
-            print ("Fitness:",curr_fit)
-            print ("Plaintext:",plain)
+            self.print_verbose({'Iterations':self.iterations,'Key':curr_k,'Fitness':curr_fit,'Plaintext':plain}, 'FINAL RESULTS')
 
         return {"key":curr_k,"fit":curr_fit,"plain":plain}
     
