@@ -66,7 +66,7 @@ class CaesarShift(Cipher):
         return self.sub.decode(msg,self.to_alph((-1)*key),alphabet)
     
 class SimpleSub(Cipher):
-    def decode(self,msg,key=None,alphabet=None):
+    def decode(self,msg,key=None,alphabet=Constants.alphabets['en']):
         # Initialise...
         if key is None:
             key = self.key
@@ -83,7 +83,7 @@ class SimpleSub(Cipher):
         return r
     
 class Vigenere(Cipher):
-    def decode(self,msg,key=None,alphabet=None):
+    def decode(self,msg,key=None,alphabet=Constants.alphabets['en']):
         # Initialise...
         if key is None:
             key = self.key
@@ -96,12 +96,79 @@ class Vigenere(Cipher):
         for ch in msg:
             try:
                 r += alphabet[(alphabet.index(ch) - alphabet.index(key[keypos]) + len(alphabet))%len(alphabet)]
+                #r += alphabet[(alphabet.index(key[keypos])- alphabet.index(ch))%len(alphabet)]
                 keypos += 1
                 if keypos == len(key):
                     keypos = 0
             except:
                 r += ch
         return r
+
+class VariantBeaufort(Cipher):
+    def __init__(self,key='',alphabet=Constants.alphabets['en']):
+        self.key = key
+        self.alphabet = alphabet
+        self.sub = Vigenere()
+        
+    def decode(self,msg,key=None,alphabet=None):
+        if key is None:
+            key = copy(self.key)
+        if alphabet is None:
+            alphabet = self.alphabet
+
+        v_k = ''
+        for k in key:
+            v_k += alphabet[(-1)*(alphabet.index(k))]
+
+
+        return self.sub.decode(msg,v_k,alphabet)
+
+class Beaufort(Cipher):
+    def __init__(self,key='',alphabet=Constants.alphabets['en']):
+        self.key = key
+        self.alphabet = alphabet
+        self.sub = VariantBeaufort()
+        
+    def decode(self,msg,key=None,alphabet=None):
+        if key is None:
+            key = copy(self.key)
+        if alphabet is None:
+            alphabet = self.alphabet
+
+        v_c =''
+        for c in msg:
+            v_c += alphabet[(-1)*(alphabet.index(c))]
+
+        return self.sub.decode(v_c,key,alphabet)
+
+class Porta(Cipher):
+    def decode(self,msg,key=None,alphabet=None):
+        if key is None:
+            key = copy(self.key)
+        if alphabet is None:
+            alphabet = self.alphabet
+
+        v_k = ''
+        for k in key:
+            v_k += alphabet[math.floor(alphabet.index(k)/2)]
+
+        keypos = 0
+        r = ""
+        second_alph = alphabet[math.floor(len(alphabet)/2):]
+        first_alph = alphabet[:math.floor(len(alphabet)/2)]
+        for ch in msg:
+            if ch in first_alph:
+                r += second_alph[(first_alph.index(ch) + alphabet.index(v_k[keypos]))%len(second_alph)]
+            elif ch in second_alph:
+                r += first_alph[(second_alph.index(ch) - alphabet.index(v_k[keypos]))%len(first_alph)]
+            else:
+                r += ch
+
+            keypos += 1
+            if keypos == len(v_k):
+                keypos = 0
+        return r
+    
 
 class Redefence(Cipher):
     def decode(self,msg,key=None,alphabet=None):
