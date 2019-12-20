@@ -1,11 +1,13 @@
 import Constants
 import random
-from Scorers import ngram_loader
+import Scorers
+from Scorers import ngram_loader, Dictionary
+from Mutators import DictionaryMutator
 
 ######## BASE CLASSES
 
 class Starter:
-    def __init__(self,alphabet=Constants.alphabets['en']):
+    def __init__(self,alphabet=Constants.alphabets['en'],**kwargs):
         self.alphabet = alphabet
 ################################
 
@@ -13,7 +15,13 @@ class Starter:
 
 class RandomAlphabet(Starter):
     def generate(self,**kwargs):
-        return random.shuffle(self.alphabet)
+        alphabet = self.alphabet
+        if 'removes' in kwargs:
+            for r in kwargs['removes']:
+                alphabet = alphabet.replace(r,'')
+        alph_list = list(alphabet)
+        random.shuffle(alph_list)
+        return ''.join(alph_list)
 
 class RandomKey(Starter):
     def generate(self,**kwargs):
@@ -31,6 +39,18 @@ class RandomInteger(Starter):
             ln = len(self.alphabet) - 1
 
         return random.randint(0,ln)
+
+class RandomWord(Starter):
+    def __init__(self,alphabet=Constants.alphabets['en'],language='en',d_type='fast'):
+        self.alphabet = alphabet
+        self.dm = DictionaryMutator(language=language,d_type=d_type)
+        
+    def generate(self,**kwargs):
+        try:
+            keygen = kwargs['keygen']
+        except:
+            keygen = self.dm.no_change
+        return keygen(self.dm.dict.get_random_word()[0],**kwargs)
 
 #####################################
 

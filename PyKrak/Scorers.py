@@ -10,6 +10,7 @@
 import math
 from copy import copy as shallowcopy
 import pkg_resources
+import random
 
 # 5+grams are not supported as they show no significant increase in decryption accuracy
 # or decryption time, and smoothing becomes more difficult and can lead to a decrease in
@@ -21,6 +22,43 @@ ngramfiles = {
     3: 'trigrams.txt',
     4: 'quadgrams.txt'
 }
+
+dictionary_files = {
+    'fast': 'fast_dict.txt'
+}
+
+class Dictionary:
+    def __init__(self,lang='en',t='fast'):
+        self.words = []
+        file = pkg_resources.resource_filename(__name__,'data/' + lang + '/' + dictionary_files[t])
+        
+        for line in open(file):
+            self.words.append(line)
+
+        self.counter = 0
+        self.word_count = len(self.words)
+
+    def get_word(self,i):
+        return self.words[i]
+
+    def get_random_word(self):
+        i = random.randint(0,self.word_count-1)
+        return [self.words[i], i]
+
+    def get_nearby_word(self,i,radius=1000):
+        i += (random.randint(-radius,radius))%(self.word_count-1)
+        return [self.words[i], i]
+
+    def get_next_word(self):
+        r = self.words[self.counter]
+        self.counter = (self.counter + 1)%(self.word_count - 1)
+        return [r,self.counter]
+
+    def find_word(self,w):
+        return self.words.index(w)
+
+    def reset(self):
+        self.counter = 0
 
 def ngram_loader(n,lang='en',query=['counts', 'order', 'frequencies', 'sum'],sep=' '):
     ngrams = {}

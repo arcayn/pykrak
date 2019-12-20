@@ -19,6 +19,51 @@ class Cipher:
     def decode(self,msg,key=None,alphabet=None):
         return msg
 
+class Playfair(Cipher):
+    def __init__(self,key='',alphabet=Constants.alphabets['en']):
+        self.key = key
+        self.alphabet = alphabet
+        if key != '':
+            self.build_keysquare(key, math.floor(math.sqrt(len(key))))
+        
+    def build_keysquare(self,k,l):
+        self.keysquare = [k[(x-1)*l:x*l] for x in range(1,1+math.floor(len(k)/l))]
+
+    def find_in_keysquare(self,c):
+        for y in range(len(self.keysquare)):
+            row = self.keysquare[y]
+            for x in range(len(row)):
+                if row[x] == c:
+                    return [x,y]
+
+    def decode(self,msg,key='abcedfghiklmnopqrstuvwxyz',alphabet=None,ln=None):
+        # Initialise...
+        if alphabet is None:
+            alphabet = self.alphabet
+        if key is None:
+            key = self.key
+        if ln is None:
+            ln = math.floor(math.sqrt(len(key)))
+        if key is not None:
+            self.build_keysquare(key,ln)
+
+        r = ''
+        if len(msg)%2 == 1:
+            msg += 'x'
+
+        for x in range(math.floor(len(msg)/2)):
+            bi = msg[x*2] + msg[1+(x*2)]
+            pos = [self.find_in_keysquare(c) for c in bi]
+            if pos[0][0] == pos[1][0]:
+                r += self.keysquare[(pos[0][1] - 1)%len(self.keysquare)][pos[0][0]] + self.keysquare[(pos[1][1] - 1)%len(self.keysquare)][pos[0][0]]
+            elif pos[0][1] == pos[1][1]:
+                r += self.keysquare[pos[0][1]][(pos[0][0] - 1)%len(self.keysquare[0])] + self.keysquare[pos[0][1]][(pos[1][0] - 1)%len(self.keysquare[0])]
+            else:
+                r += self.keysquare[pos[0][1]][pos[1][0]] + self.keysquare[pos[1][1]][pos[0][0]]
+
+        return r   
+    
+
 class AffineShift(Cipher):
     def mod_inverse(self,a,m):
         a = a%m

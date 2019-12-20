@@ -1,7 +1,8 @@
 import Constants
 import random
-from Scorers import ngram_loader
+from Scorers import ngram_loader, Dictionary,dictionary_files
 from copy import copy
+import pkg_resources
 
 ######## BASE CLASSES
 
@@ -105,6 +106,71 @@ class RepeaterMutator(Mutator):
 
         self.queries += 1
         return r
+
+class DictionaryMutator(Mutator):
+    def __init__(self,alphabet=Constants.alphabets['en'],language='en',d_type='fast',**kwargs):
+        self.dict = Dictionary(language,d_type)
+        self.alphabet = alphabet
+        self.queries = 0
+
+    def no_change(self, s, **kwargs):
+        return s
+
+    def alphabetizer(self,s,**kwargs):
+        t_alph = self.alphabet
+        if 'removes' in kwargs:
+            for r in kwargs['removes']:
+                t_alph = t_alph.replace(r,'')
+        k = ''
+        for ch in s:
+            if ch in k or ch not in t_alph:
+                continue
+            k += ch
+            t_alph.replace(ch,'')
+        for ch in t_alph:
+            if ch in k:
+                continue
+            k += ch
+
+        return k
+    
+    def generate(self,s,**kwargs):
+        try:
+            lang = kwargs['lang']
+        except:
+            lang = 'en'
+            
+        try:
+            dictionary = kwargs['dict']
+        except:
+            dictionary = self.dict
+
+        try:
+            key_generator = kwargs['keygen']
+        except:
+            key_generator = self.no_change
+
+        if 'systematic' in kwargs:
+            word = dictionary.get_next_word()
+            if word[1] == 0 and self.queries != 0:
+                return None
+
+            word = word[0]
+
+        else:
+            if self.queries == 0:
+                self.queries = random.randint(0,dictionary.word_count - 1)
+            w = dictionary.get_nearby_word(self.queries)
+            self.queries = w[1]
+            word = w[0]
+
+        return key_generator(word,**kwargs)
+
+    def reset(self):
+        self.dict.reset()
+        self.queries = 0
+
+        
 
 #####################################
 

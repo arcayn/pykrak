@@ -124,7 +124,7 @@ class SimulatedAnnealing(Solver):
                 if gv > math.e**((curr_fit-t_fit)/temp):
                     continue
 
-            if 'verbose' in kwargs:
+            if 'verbose' in kwargs and t_fit <= curr_fit:
                 print ("===== UPDATED KEY FOUND =====")
                 print ("Current fitness:", t_fit)
                 print ("Current key:", t_k)
